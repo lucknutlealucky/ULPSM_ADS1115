@@ -7,8 +7,25 @@
 
 #include "Arduino.h"
 #include "ULP.h"
+#include <Wire.h> 
+#include <Adafruit_ADS1015.h>
+
 
 ULP::ULP (int a, int b, float c) : pCPin(a), pTPin(b), pSf(c) {
+  
+  Adafruit_ADS1115 ads_1(0x49);
+  Adafruit_ADS1115 ads_2(0x48);
+  Adafruit_ADS1115 ads_3(0x4a);
+  Adafruit_ADS1115 ads_4(0x4b);
+
+  ads_1.setGain(GAIN_ONE);
+  ads_2.setGain(GAIN_ONE);
+  ads_3.setGain(GAIN_ONE);
+  ads_4.setGain(GAIN_ONE);
+  ads_1.begin();
+  ads_2.begin();
+  ads_3.begin();
+  ads_4.begin();
 
   pTzero = 20.0;
   pIzero = 0.0;
@@ -22,6 +39,88 @@ ULP::ULP (int a, int b, float c) : pCPin(a), pTPin(b), pSf(c) {
   pLvolt = (pLtemp + pTb) * pVsup / pTs; //volts for cal of temp sensor
 }
 
+float redADC(num){
+if(num == 11){
+  return ads_1.readADC_SingleEnded(0);
+}
+  
+else if(num == 12){
+  return ads_1.readADC_SingleEnded(1);
+
+}
+  
+else if(num == 13){
+  return ads_1.readADC_SingleEnded(2);
+
+}
+  
+else if(num == 14){
+  return ads_1.readADC_SingleEnded(3);
+  
+}
+  
+else if(num == 21){
+  return ads_2.readADC_SingleEnded(0);
+  
+}
+  
+else if(num == 22){
+  return ads_2.readADC_SingleEnded(1);
+  
+}
+
+else if(num == 23){
+  return ads_2.readADC_SingleEnded(2);
+  
+}
+  
+else if(num == 24){
+  return ads_2.readADC_SingleEnded(3);
+  
+}
+  
+else if(num == 31){
+  return ads_3.readADC_SingleEnded(0);
+  
+}
+
+else if(num == 32){
+  return ads_3.readADC_SingleEnded(1);
+  
+}
+  
+else if(num == 33){
+  return ads_3.readADC_SingleEnded(2);
+  
+}
+  
+else if(num == 34){
+  return ads_3.readADC_SingleEnded(3);
+
+}
+  
+else if(num == 41){
+  return ads_4.readADC_SingleEnded(0);
+  
+}
+  
+else if(num == 42){
+  return ads_4.readADC_SingleEnded(1);
+  
+}
+  
+else if(num == 43){
+  return ads_4.readADC_SingleEnded(2);
+  
+}
+  
+else if(num == 44){
+  return ads_4.readADC_SingleEnded(3);
+  
+}
+
+}
+
 //float ULP::pVcc = 5.0;
 //float ULP::pVsup = 3.3;
 
@@ -30,12 +129,12 @@ void ULP::getTemp(int n) {
   unsigned long anaCounts = 0;
   etime = millis() + n * 1000;
   do {
-    anaCounts = anaCounts + analogRead(pTPin);
+    anaCounts = anaCounts + redADC(pTPin);
     delay(1);
     i++;
   } while (millis() < etime);
   float Cnts = float (anaCounts) / float(i);
-  float Volts = Cnts * pVcc / 1024.0;
+  float Volts = Cnts * pVcc / 32768.0;
 
   pT = (pTs / pVsup) * Volts - pTb;
   
@@ -68,12 +167,12 @@ void ULP::setTSpan(float t, String R) {
   unsigned long anaCounts = 0;
   etime = millis() + n * 1000;
   do {
-    anaCounts = anaCounts + analogRead(pTPin);
+    anaCounts = anaCounts + redADC(pTPin);
     delay(1);
     i++;
   } while (millis() < etime);
   float Cnts = float (anaCounts) / float(i);
-  float Volts = Cnts * pVcc / 1024;
+  float Volts = Cnts * pVcc / 32768;
 
   if (R == "HIGH") {
     pHtemp = t;
@@ -108,12 +207,12 @@ bool  ULP::OCzero (int n) {
   Serial.flush();
   etime = millis() + n * 1000;
   do {
-    anaCounts = anaCounts + analogRead(pCPin);
+    anaCounts = anaCounts + redADC(pCPin);
     delay(1);
     i++;
   } while (millis() < etime);
   float Cnts = float (anaCounts) / float(i);
-  pVref_set = Cnts * pVcc * 1000.0 / 1024.0; //in mV
+  pVref_set = Cnts * pVcc * 1000.0 / 32768.0; //in mV
       Serial.println(abs(pVref - pVref_set));
 
   if (abs(pVref - pVref_set) > 50)return false;
@@ -130,13 +229,13 @@ void ULP::getIgas(int n){
   unsigned long anaCounts = 0;
   etime = millis() + n * 1000;
   do {
-    anaCounts = anaCounts + analogRead(pCPin);
+    anaCounts = anaCounts + redADC(pCPin);
     delay(1);
     i++;
   } while (millis() < etime);
   float Cnts = float (anaCounts) / float(i);
 
-  pVgas = Cnts * pVcc * 1000.0 / 1024.0; //in mV
+  pVgas = Cnts * pVcc * 1000.0 / 32768.0; //in mV
   pInA = (pVgas-pVref_set)/pGain * 1000.0; //in nA 
 } 
 
